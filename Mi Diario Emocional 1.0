@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Mi Diario Emocional</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      background-color: #fff7f0;
+      color: #333;
+      margin: 0;
+      padding: 1rem;
+      font-size: 14px;
+    }
+    h1 {
+      text-align: center;
+      color: #d65a31;
+    }
+    .emotions {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin: 20px 0;
+    }
+    button {
+      padding: 10px;
+      font-size: 14px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: 0.2s;
+      color: white;
+    }
+    button:hover {
+      opacity: 0.9;
+    }
+    textarea {
+      width: 100%;
+      height: 80px;
+      margin-top: 15px;
+      padding: 10px;
+      font-size: 14px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+    }
+    .log {
+      margin-top: 20px;
+    }
+    .day-entry {
+      margin-bottom: 20px;
+    }
+    .day-entry h3 {
+      margin-bottom: 10px;
+      color: #d65a31;
+      border-bottom: 1px solid #ccc;
+    }
+    .footer {
+      text-align: center;
+      margin-top: 30px;
+      font-style: italic;
+      font-size: 13px;
+      color: #999;
+    }
+  </style>
+</head>
+<body>
+  <h1>¿Cómo te sientes hoy?</h1>
+  <div class="emotions" id="emotion-buttons"></div>
+  <textarea id="nota" placeholder="Escribe una nota o reflexión..."></textarea>
+  <button onclick="guardarNota()">Guardar Nota</button>
+  <button onclick="registrarComida()">🥗 Registrar Comida</button>
+  <button onclick="registrarSueno()">💤 Registrar Sueño</button>
+  <div class="log" id="registro"></div>
+  <div class="footer">Susurros del Corazón</div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script>
+    const emociones = [
+      { texto: "Feliz 😊", color: "#FFD700" },
+      { texto: "Triste 😢", color: "#87CEFA" },
+      { texto: "Ansioso 😰", color: "#FFA07A" },
+      { texto: "Irritado 😠", color: "#FF6347" },
+      { texto: "En paz 🧘", color: "#98FB98" },
+      { texto: "Motivado 💪", color: "#DDA0DD" },
+      { texto: "Agradecido 🙏", color: "#F4A460" },
+      { texto: "Enamorado 💖", color: "#FF69B4" },
+      { texto: "Cansado 😴", color: "#A9A9A9" },
+      { texto: "Aburrido 😐", color: "#D3D3D3" },
+      { texto: "Esperanzado 🌟", color: "#00CED1" },
+      { texto: "Frustrado 😤", color: "#DC143C" }
+    ];
+
+    let registros = JSON.parse(localStorage.getItem("registros")) || {};
+    let ultimoDia = localStorage.getItem("ultimoDia") || "";
+
+    function getHoy() {
+      const hoy = new Date();
+      return hoy.toLocaleDateString("es-ES", { weekday: "long", year: "numeric", month: "short", day: "numeric" });
+    }
+
+    function crearBotones() {
+      const contenedor = document.getElementById("emotion-buttons");
+      emociones.forEach(emocion => {
+        const btn = document.createElement("button");
+        btn.innerText = emocion.texto;
+        btn.style.backgroundColor = emocion.color;
+        btn.onclick = () => registrar(emocion.texto);
+        contenedor.appendChild(btn);
+      });
+    }
+
+    function registrar(emocion) {
+      const hoy = getHoy();
+      const nota = document.getElementById("nota").value.trim();
+      if (!registros[hoy]) registros[hoy] = [];
+      registros[hoy].push({ tipo: "emoción", emocion, nota, hora: new Date().toLocaleTimeString() });
+      localStorage.setItem("registros", JSON.stringify(registros));
+      mostrarRegistro();
+      document.getElementById("nota").value = "";
+    }
+
+    function registrarComida() {
+      const hoy = getHoy();
+      const comentario = prompt("¿Qué comiste?");
+      if (!registros[hoy]) registros[hoy] = [];
+      registros[hoy].push({ tipo: "comida", nota: comentario || "", hora: new Date().toLocaleTimeString() });
+      localStorage.setItem("registros", JSON.stringify(registros));
+      mostrarRegistro();
+    }
+
+    function registrarSueno() {
+      const hoy = getHoy();
+      const comentario = prompt("¿Cómo dormiste o a qué hora?");
+      if (!registros[hoy]) registros[hoy] = [];
+      registros[hoy].push({ tipo: "sueño", nota: comentario || "", hora: new Date().toLocaleTimeString() });
+      localStorage.setItem("registros", JSON.stringify(registros));
+      mostrarRegistro();
+    }
+
+    function mostrarRegistro() {
+      const contenedor = document.getElementById("registro");
+      contenedor.innerHTML = "";
+      Object.keys(registros).forEach(dia => {
+        const divDia = document.createElement("div");
+        divDia.classList.add("day-entry");
+        const titulo = document.createElement("h3");
+        titulo.textContent = dia;
+        divDia.appendChild(titulo);
+        registros[dia].forEach(entry => {
+          const p = document.createElement("p");
+          if (entry.tipo === "emoción") {
+            p.textContent = `${entry.hora} - ${entry.emocion}${entry.nota ? " — " + entry.nota : ""}`;
+          } else if (entry.tipo === "comida") {
+            p.textContent = `${entry.hora} - 🍽️ Comida: ${entry.nota}`;
+          } else if (entry.tipo === "sueño") {
+            p.textContent = `${entry.hora} - 😴 Sueño: ${entry.nota}`;
+          }
+          divDia.appendChild(p);
+        });
+        contenedor.appendChild(divDia);
+      });
+    }
+
+    function guardarNota() {
+      alert("Selecciona primero una emoción para guardar tu nota.");
+    }
+
+    function exportarPDF(dia, data) {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      doc.text(`Diario Emocional – ${dia}`, 10, 10);
+      data.forEach((entry, i) => {
+        const y = 20 + i * 10;
+        let linea = "";
+        if (entry.tipo === "emoción") {
+          linea = `${entry.hora} - ${entry.emocion} ${entry.nota || ""}`;
+        } else if (entry.tipo === "comida") {
+          linea = `${entry.hora} - 🍽️ Comida: ${entry.nota}`;
+        } else if (entry.tipo === "sueño") {
+          linea = `${entry.hora} - 😴 Sueño: ${entry.nota}`;
+        }
+        doc.text(linea, 10, y);
+      });
+      doc.save(`Diario_${dia.replace(/[\s,]/g, "_")}.pdf`);
+    }
+
+    function checkCambioDeDia() {
+      const hoy = getHoy();
+      if (ultimoDia && ultimoDia !== hoy && registros[ultimoDia]) {
+        exportarPDF(ultimoDia, registros[ultimoDia]);
+        registros = {};
+        localStorage.setItem("registros", JSON.stringify(registros));
+      }
+      ultimoDia = hoy;
+      localStorage.setItem("ultimoDia", ultimoDia);
+      mostrarRegistro();
+    }
+
+    crearBotones();
+    checkCambioDeDia();
+  </script>
+</body>
+</html>
